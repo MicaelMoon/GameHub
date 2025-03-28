@@ -4,11 +4,12 @@ using System.Threading.Tasks;
 
 class Program
 {
-    private static HubConnection _hubConnection;
-    private static readonly List<string> _message = new();
-
+    private static HubConnection connection;
+    private static string playerName = "Luigi";
     private static async Task Main(string[] args)
     {
+        Console.WriteLine("Press to enter looking for match");
+        Console.ReadKey();
         await GameHub();
 
         Console.WriteLine("In menu Exit");
@@ -19,21 +20,33 @@ class Program
     {
         try
         {
-            string playerName = "Luigi"; // Change to Player2 for the second instance
 
             // Setup the SignalR client connection
-            var connection = new HubConnectionBuilder()
+            connection = new HubConnectionBuilder()
                 .WithUrl("https://localhost:7262/gameHub")
                 .Build();
 
-            connection.On<string, string>("MatchFound", (player1, player2) =>
+            connection.On<string, string>("MatchFound", async (player1, player2) =>
             {
+                Console.Clear();
                 Console.WriteLine($"Match found! {player1} vs {player2}");
+                await GameStart();
             });
 
             connection.On("WaitingForOpponent", () =>
             {
                 Console.WriteLine("Waiting for an opponent...");
+            });
+
+            connection.On<string>("Results", async (winner) =>
+            {
+                Console.Clear();
+                Console.WriteLine("Winner is " + winner);
+            });
+
+            connection.On("WaitingForOpponentToChoose", () =>
+            {
+                Console.WriteLine("Waiting for opponent to choose...");
             });
 
             await connection.StartAsync();
@@ -42,10 +55,23 @@ class Program
             await connection.InvokeAsync("JoinQueue", playerName);
 
             // Keep the console open
-            Console.WriteLine("Press any key to exit...");
             Console.ReadKey();
         }
         catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+        }
+    }
+
+    private static async Task GameStart()
+    {
+        try
+        {
+            Console.WriteLine("Rock, Paper, Scissor");
+            string input = Console.ReadLine();
+            await connection.InvokeAsync("Shoot", playerName, input);
+        }
+        catch(Exception ex)
         {
             Console.WriteLine(ex);
         }
