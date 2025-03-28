@@ -32,10 +32,12 @@ namespace GameHub
             }
         }
 
-        private void StartGame(string player1, string player2)
-        {
+        private async void StartGame(string player1, string player2)
+           {
             // Here you would start the game logic (you can spin up a new Docker container for this)
             Console.WriteLine($"Game starting between {player1} and {player2}...");
+            await Clients.Client(player1).SendAsync("MatchFound", player1, player2);
+            await Clients.Client(player2).SendAsync("MatchFound", player1, player2);
         }
     }
 }
